@@ -18,6 +18,7 @@
 
     <modules>
         <module>ortb2-blocking</module>
+        <module>arcspan-contextual-app</module>
     </modules>
 
     <properties>
