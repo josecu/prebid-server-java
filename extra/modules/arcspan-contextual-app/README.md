@@ -11,8 +11,7 @@ Please replace the `silo` parameter value with the one provided by your ArcSpan 
 
 # Maintainer contacts
 
-Any suggestions or questions can be directed to the [engineering@arcspan.com](engineering@arcspan.com)
-e-mail.
+Please reach out to [engineering@arcspan.com](engineering@arcspan.com) with any suggestions, questions, or concerns.
 
 Alternatively, please open a new [issue](https://github.com/prebid/prebid-server-java/issues/new)
 or [pull request](https://github.com/prebid/prebid-server-java/pulls) in this repository.
