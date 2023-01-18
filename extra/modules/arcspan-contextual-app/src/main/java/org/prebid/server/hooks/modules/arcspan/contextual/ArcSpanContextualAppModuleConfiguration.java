@@ -10,7 +10,6 @@ public class ArcSpanContextualAppModuleConfiguration {
 
     @Bean
     ArcSpanContextualAppModule arcSpanContextualAppModule() {
-        System.out.println("ArcSpanContextualAppModuleConfiguration INSTANTIATED");
         return new ArcSpanContextualAppModule();
     }
 
