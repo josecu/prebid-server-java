@@ -1,9 +1,8 @@
-package org.prebid.server.hooks.modules.arcspan.contextual.spring.config;
+package org.prebid.server.hooks.modules.arcspan.contextual;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.prebid.server.hooks.modules.arcspan.contextual.ArcSpanContextualAppModule;
 
 @ConditionalOnProperty(prefix = "hooks." + ArcSpanContextualAppModule.CODE, name = "enabled", havingValue = "true")
 @Configuration

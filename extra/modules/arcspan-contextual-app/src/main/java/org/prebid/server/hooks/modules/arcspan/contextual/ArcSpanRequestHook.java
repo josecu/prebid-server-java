@@ -10,7 +10,7 @@ import io.vertx.core.Future;
 
 public class ArcSpanRequestHook implements RawAuctionRequestHook {
     
-    private static final String CODE = "arcspan-contextual-app";
+    private static final String CODE = "arcspan-request-hook";
 
     @Override
     public String code() {
