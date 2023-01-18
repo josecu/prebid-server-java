@@ -1,5 +1,12 @@
 package org.prebid.server.hooks.modules.arcspan.contextual;
 
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanEntrypointHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanRawAuctionRequestHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanProcessedAuctionRequestHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanBidderRequestHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanRawBidderResponseHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanAllProcessedBidResponsesHook;
+import org.prebid.server.hooks.modules.arcspan.contextual.hooks.ArcSpanAuctionResponseHook;
 import org.prebid.server.hooks.v1.Hook;
 import org.prebid.server.hooks.v1.InvocationContext;
 import org.prebid.server.hooks.v1.Module;
@@ -19,7 +26,13 @@ public class ArcSpanContextualAppModule implements Module {
     public ArcSpanContextualAppModule() {
         logger.info("ArcSpanContextualAppModule instantiated");
         hooks = List.of(
-            new ArcSpanEntrypointHook()
+            new ArcSpanEntrypointHook(),
+            new ArcSpanRawAuctionRequestHook(),
+            new ArcSpanProcessedAuctionRequestHook(),
+            new ArcSpanBidderRequestHook(),
+            new ArcSpanRawBidderResponseHook(),
+            new ArcSpanAllProcessedBidResponsesHook(),
+            new ArcSpanAuctionResponseHook()
         );
     }
 

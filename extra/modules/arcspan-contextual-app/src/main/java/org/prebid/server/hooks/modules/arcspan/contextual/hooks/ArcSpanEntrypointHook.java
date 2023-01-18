@@ -1,5 +1,6 @@
-package org.prebid.server.hooks.modules.arcspan.contextual;
+package org.prebid.server.hooks.modules.arcspan.contextual.hooks;
 
+import org.prebid.server.hooks.modules.arcspan.contextual.InvocationResultImpl;
 import org.prebid.server.hooks.v1.InvocationContext;
 import org.prebid.server.hooks.v1.InvocationResult;
 import org.prebid.server.hooks.v1.entrypoint.EntrypointHook;
@@ -9,6 +10,7 @@ import io.vertx.core.logging.LoggerFactory;
 
 import io.vertx.core.Future;
 import java.util.Arrays;
+
 public class ArcSpanEntrypointHook implements EntrypointHook {
     
     private static final String CODE = "arcspan-entrypoint-hook";
