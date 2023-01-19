@@ -18,6 +18,8 @@ public class ArcSpanRawAuctionRequestHook implements RawAuctionRequestHook {
     public Future<InvocationResult<AuctionRequestPayload>> call(AuctionRequestPayload payload,
             AuctionInvocationContext invocationContext) {
             logger.info("{0} called", CODE);
+
+            logger.info("Raw Auction Request with ID {0}", payload.bidRequest().getId());
             return Future.succeededFuture();
     }
 

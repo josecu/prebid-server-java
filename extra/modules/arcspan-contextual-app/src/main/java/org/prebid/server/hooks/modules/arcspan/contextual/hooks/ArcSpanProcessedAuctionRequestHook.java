@@ -17,6 +17,8 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
     public Future<InvocationResult<AuctionRequestPayload>> call(AuctionRequestPayload payload,
             AuctionInvocationContext invocationContext) {
             logger.info("{0} called", CODE);
+
+            logger.info("Processed Auction Request with ID {0}", payload.bidRequest().getId());
             return Future.succeededFuture();
     }
 
