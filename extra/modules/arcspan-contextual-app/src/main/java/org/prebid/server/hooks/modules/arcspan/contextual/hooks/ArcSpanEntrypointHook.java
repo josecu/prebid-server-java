@@ -1,6 +1,5 @@
 package org.prebid.server.hooks.modules.arcspan.contextual.hooks;
 
-import org.prebid.server.hooks.modules.arcspan.contextual.InvocationResultImpl;
 import org.prebid.server.hooks.v1.InvocationContext;
 import org.prebid.server.hooks.v1.InvocationResult;
 import org.prebid.server.hooks.v1.entrypoint.EntrypointHook;
@@ -30,10 +29,6 @@ public class ArcSpanEntrypointHook implements EntrypointHook {
                 logger.info("HEADERS VALUE: {0}", payload.headers());
                 logger.info("BODY VALUE: {0}", payload.body());
 
-                return Future.succeededFuture(
-                    InvocationResultImpl.<EntrypointPayload>builder()
-                    .errors(Arrays.asList("Buenos Aires", "Córdoba", "La Plata"))
-                    .build()
-                );
+                return Future.succeededFuture();
     }
 }
