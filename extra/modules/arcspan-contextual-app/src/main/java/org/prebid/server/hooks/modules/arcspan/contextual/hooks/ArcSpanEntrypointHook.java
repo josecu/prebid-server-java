@@ -8,7 +8,6 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
 import io.vertx.core.Future;
-import java.util.Arrays;
 
 public class ArcSpanEntrypointHook implements EntrypointHook {
     

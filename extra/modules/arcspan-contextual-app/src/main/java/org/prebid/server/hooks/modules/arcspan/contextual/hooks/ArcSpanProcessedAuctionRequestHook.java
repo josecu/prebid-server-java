@@ -8,6 +8,7 @@ import org.prebid.server.hooks.v1.auction.AuctionRequestPayload;
 import org.prebid.server.hooks.execution.v1.auction.AuctionRequestPayloadImpl;
 import org.prebid.server.hooks.modules.arcspan.contextual.InvocationResultImpl;
 import org.prebid.server.hooks.v1.auction.ProcessedAuctionRequestHook;
+
 import com.iab.openrtb.request.BidRequest;
 import com.iab.openrtb.request.Site;
 import com.iab.openrtb.request.Content;
@@ -17,12 +18,22 @@ import com.iab.openrtb.request.Segment;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.Future;
+
+import org.prebid.server.vertx.http.BasicHttpClient;
+import io.vertx.core.Vertx;
+import org.prebid.server.vertx.http.model.HttpClientResponse;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
+
+import org.prebid.server.exception.PreBidException;
+
+import org.prebid.server.hooks.modules.arcspan.contextual.model.ArcObject;
 
 public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionRequestHook {
 
@@ -64,6 +75,17 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
             return auctionRequestPayload.bidRequest();
         }
 
+        final Vertx vertx = Vertx.vertx();
+        final BasicHttpClient client = new BasicHttpClient(vertx, vertx.createHttpClient());
+
+        // TODO: Use existing Vert.X context
+
+        String pageUrl = "https://dwy889uqoaft4.cloudfront.net/3333444jj?uri=" + auctionRequestPayload.bidRequest().getSite().getPage();
+        logger.info("Fetching classifications from url: {0}", pageUrl);
+
+        client.get(pageUrl, 1000)
+                .map(this::processResponse);
+
         // TODO: Fetch contextual data for page url
 
         boolean hasContent = hasSite && auctionRequestPayload.bidRequest().getSite().getContent() != null;
@@ -100,6 +122,49 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
                         .build();
 
         return auctionRequestPayload.bidRequest().toBuilder().site(site).build();
+    }
+
+    private Void processResponse(HttpClientResponse response) {
+        final int statusCode = response.getStatusCode();
+        if (statusCode != 200) {
+            throw new PreBidException("HTTP status code " + statusCode);
+        }
+
+        final String body = response.getBody();
+
+
+        logger.info("Received classification data: {0}", body.substring(13, body.length() - 1));
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper(); // TODO: Make this a singleton
+            ArcObject obj = objectMapper.readValue(body.substring(13, body.length() - 1), ArcObject.class);
+
+            logger.info("Received arc object {0}", obj);
+
+            if (obj.getCodes() != null) {
+                if (obj.getCodes().getImages() != null) {
+                    List<String> newImages = new ArrayList<String>();
+                    for (String code : obj.getCodes().getImages()) {
+                        newImages.add(code.replaceAll("-", "_"));
+                    }
+                    obj.getCodes().setImages(newImages);
+                }
+
+                if (obj.getCodes().getText() != null) {
+                    List<String> newText = new ArrayList<String>();
+                    for (String code : obj.getCodes().getText()) {
+                        newText.add(code.replaceAll("-", "_"));
+                    }
+                    obj.getCodes().setText(newText);
+                }
+            }
+
+            logger.info("Received arc object {0}", obj);
+        } catch (JsonProcessingException e) {
+            logger.info("JSON processing exception {0}", e);
+        }
+
+        return null;
     }
     
 }
