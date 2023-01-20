@@ -9,7 +9,6 @@ import org.prebid.server.hooks.execution.v1.auction.AuctionRequestPayloadImpl;
 import org.prebid.server.hooks.modules.arcspan.contextual.InvocationResultImpl;
 import org.prebid.server.hooks.v1.auction.ProcessedAuctionRequestHook;
 
-import com.iab.openrtb.request.BidRequest;
 import com.iab.openrtb.request.Site;
 import com.iab.openrtb.request.Content;
 import com.iab.openrtb.request.Data;
@@ -48,14 +47,7 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
             logger.info("Processed Auction Request with Site name {0}", payload.bidRequest().getSite().getName());
             logger.info("Processed Auction Request with Site cat {0}", payload.bidRequest().getSite().getCat());
 
-            return Future.succeededFuture(
-                InvocationResultImpl.<AuctionRequestPayload>builder()
-                    .status(InvocationStatus.success)
-                    .action(InvocationAction.update)
-                    .payloadUpdate(p ->
-                      AuctionRequestPayloadImpl.of(update(p)))
-                .build()
-            );
+            return fetchContextual(payload);
     }
 
     @Override
@@ -63,32 +55,68 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
         return CODE;
     }
 
-    private BidRequest update(AuctionRequestPayload auctionRequestPayload) {
+    private Future<InvocationResult<AuctionRequestPayload>> fetchContextual(AuctionRequestPayload auctionRequestPayload) {
         boolean hasSite = auctionRequestPayload.bidRequest().getSite() != null;
         if (!hasSite) {
             logger.info("No site object included in request. Unable to add contextual data.");
-            return auctionRequestPayload.bidRequest();
+            return Future.succeededFuture();
         }
         boolean hasPage = auctionRequestPayload.bidRequest().getSite().getPage() != null;
         if (!hasPage) {
             logger.info("Site object does not contain a page url. Unable to add contextual data.");
-            return auctionRequestPayload.bidRequest();
+            return Future.succeededFuture();
         }
 
-        final Vertx vertx = Vertx.vertx();
+        final Vertx vertx = Vertx.vertx(); // TODO: Use existing Vert.X context
         final BasicHttpClient client = new BasicHttpClient(vertx, vertx.createHttpClient());
-
-        // TODO: Use existing Vert.X context
 
         String pageUrl = "https://dwy889uqoaft4.cloudfront.net/3333444jj?uri=" + auctionRequestPayload.bidRequest().getSite().getPage();
         logger.info("Fetching classifications from url: {0}", pageUrl);
 
-        client.get(pageUrl, 1000)
-                .map(this::processResponse);
+        return client.get(pageUrl, 1000)
+                .map(this::processResponse)
+                .map(arcObject -> augmentPayload(arcObject, auctionRequestPayload));
+    }
 
-        // TODO: Fetch contextual data for page url
+    private ArcObject processResponse(HttpClientResponse response) {
+        final int statusCode = response.getStatusCode();
+        if (statusCode != 200) {
+            throw new PreBidException("HTTP status code " + statusCode);
+        }
 
-        boolean hasContent = hasSite && auctionRequestPayload.bidRequest().getSite().getContent() != null;
+        final String body = response.getBody();
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper(); // TODO: Make this a singleton
+            ArcObject obj = objectMapper.readValue(body.substring(13, body.length() - 1), ArcObject.class);
+
+            if (obj.getCodes() != null) {
+                if (obj.getCodes().getImages() != null) {
+                    List<String> newImages = new ArrayList<String>();
+                    for (String code : obj.getCodes().getImages()) {
+                        newImages.add(code.replaceAll("-", "_"));
+                    }
+                    obj.getCodes().setImages(newImages);
+                }
+
+                if (obj.getCodes().getText() != null) {
+                    List<String> newText = new ArrayList<String>();
+                    for (String code : obj.getCodes().getText()) {
+                        newText.add(code.replaceAll("-", "_"));
+                    }
+                    obj.getCodes().setText(newText);
+                }
+            }
+
+            logger.info("Received arc object {0}", obj);
+            return obj;
+        } catch (JsonProcessingException e) {
+            throw new PreBidException("Error processing ArcSpan contextual data" + e.getMessage());
+        }
+    }
+
+    private InvocationResult<AuctionRequestPayload> augmentPayload(ArcObject arcObject, AuctionRequestPayload auctionRequestPayload) {
+        boolean hasContent = auctionRequestPayload.bidRequest().getSite().getContent() != null;
         boolean hasData = hasContent && auctionRequestPayload.bidRequest().getSite().getContent().getData() != null;
 
         ObjectMapper mapper = new ObjectMapper(); // TODO: Make this a singleton
@@ -121,50 +149,12 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
                         .content(content)
                         .build();
 
-        return auctionRequestPayload.bidRequest().toBuilder().site(site).build();
-    }
-
-    private Void processResponse(HttpClientResponse response) {
-        final int statusCode = response.getStatusCode();
-        if (statusCode != 200) {
-            throw new PreBidException("HTTP status code " + statusCode);
-        }
-
-        final String body = response.getBody();
-
-
-        logger.info("Received classification data: {0}", body.substring(13, body.length() - 1));
-
-        try {
-            ObjectMapper objectMapper = new ObjectMapper(); // TODO: Make this a singleton
-            ArcObject obj = objectMapper.readValue(body.substring(13, body.length() - 1), ArcObject.class);
-
-            logger.info("Received arc object {0}", obj);
-
-            if (obj.getCodes() != null) {
-                if (obj.getCodes().getImages() != null) {
-                    List<String> newImages = new ArrayList<String>();
-                    for (String code : obj.getCodes().getImages()) {
-                        newImages.add(code.replaceAll("-", "_"));
-                    }
-                    obj.getCodes().setImages(newImages);
-                }
-
-                if (obj.getCodes().getText() != null) {
-                    List<String> newText = new ArrayList<String>();
-                    for (String code : obj.getCodes().getText()) {
-                        newText.add(code.replaceAll("-", "_"));
-                    }
-                    obj.getCodes().setText(newText);
-                }
-            }
-
-            logger.info("Received arc object {0}", obj);
-        } catch (JsonProcessingException e) {
-            logger.info("JSON processing exception {0}", e);
-        }
-
-        return null;
+        return InvocationResultImpl.<AuctionRequestPayload>builder()
+                .status(InvocationStatus.success)
+                .action(InvocationAction.update)
+                .payloadUpdate(p ->
+                    AuctionRequestPayloadImpl.of(p.bidRequest().toBuilder().site(site).build()))
+                .build();
     }
     
 }
