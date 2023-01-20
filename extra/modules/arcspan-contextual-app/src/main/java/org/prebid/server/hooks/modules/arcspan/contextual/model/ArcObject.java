@@ -16,6 +16,6 @@ public class ArcObject {
     ArcCodes codes;
 
     @JsonProperty("newcodes")
-    ArcCodes newcodes;
+    ArcCodes newCodes;
     
 }

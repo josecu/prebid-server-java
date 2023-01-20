@@ -88,7 +88,7 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
 
         try {
             ObjectMapper objectMapper = new ObjectMapper(); // TODO: Make this a singleton
-            ArcObject obj = objectMapper.readValue(body.substring(13, body.length() - 1), ArcObject.class);
+            ArcObject obj = objectMapper.readValue(body.substring(13, body.length() - 1), ArcObject.class); // TODO: Implement other endpoint that returns JSON instead of JS
 
             if (obj.getCodes() != null) {
                 if (obj.getCodes().getImages() != null) {
@@ -119,6 +119,45 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
         boolean hasContent = auctionRequestPayload.bidRequest().getSite().getContent() != null;
         boolean hasData = hasContent && auctionRequestPayload.bidRequest().getSite().getContent().getData() != null;
 
+        List<String> v1 = new ArrayList<String>();
+        List<String> v1s = new ArrayList<String>();
+        List<String> v2 = new ArrayList<String>();
+
+        if (arcObject.getCodes() != null) {
+            if (arcObject.getCodes().getText() != null) {
+                v1.addAll(arcObject.getCodes().getText());
+            }
+
+            if (arcObject.getCodes().getImages() != null) {
+                v1.addAll(arcObject.getCodes().getImages());
+            }
+        }
+
+        if (arcObject.getRaw() != null) {
+            if (arcObject.getRaw().getText() != null) {
+                v1s.addAll(arcObject.getRaw().getText());
+            }
+
+            if (arcObject.getRaw().getImages() != null) {
+                v1s.addAll(arcObject.getRaw().getImages());
+            }
+        }
+
+        if (arcObject.getNewCodes() != null) {
+            if (arcObject.getNewCodes().getText() != null) {
+                v2.addAll(arcObject.getNewCodes().getText());
+            }
+
+            if (arcObject.getNewCodes().getImages() != null) {
+                v2.addAll(arcObject.getNewCodes().getImages());
+            }
+        }
+
+        List<Segment> segments = new ArrayList<Segment>();
+        for (String segmentId: v2) {
+            segments.add(Segment.builder().id(segmentId).build());
+        }
+
         ObjectMapper mapper = new ObjectMapper(); // TODO: Make this a singleton
         ObjectNode ext = mapper.createObjectNode();
         ext.put("segtax", 6);
@@ -127,11 +166,7 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
             auctionRequestPayload.bidRequest().getSite().getContent().getData() : new ArrayList<Data>();
         Data arcspanData = Data.builder()
                             .name("arcspan")
-                            .segment(new ArrayList<Segment>() {{
-                                add(Segment.builder().id("1").build());
-                                add(Segment.builder().id("210").build());
-                                add(Segment.builder().id("483").build());
-                            }})
+                            .segment(segments)
                             .ext(ext)
                             .build();
         data.add(arcspanData);
@@ -142,10 +177,10 @@ public class ArcSpanProcessedAuctionRequestHook implements ProcessedAuctionReque
 
         Site site = auctionRequestPayload.bidRequest().getSite().toBuilder()
                         .name("arcspan")
-                        .cat(Arrays.asList("IAB8", "IAB2", "IAB17", "IAB2"))
-                        .sectioncat(Arrays.asList("IAB8", "IAB2", "IAB17", "IAB2"))
-                        .pagecat(Arrays.asList("IAB8", "IAB2", "IAB17", "IAB2"))
-                        .keywords("Sports,Food & Drink,Automotive,Automotive")
+                        .cat(v1)
+                        .sectioncat(v1)
+                        .pagecat(v1)
+                        .keywords(String.join(",", v1s))
                         .content(content)
                         .build();
 
