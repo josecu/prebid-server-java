@@ -19,8 +19,7 @@ public class ArcSpanBidderRequestHook implements BidderRequestHook {
             BidderInvocationContext invocationContext) {
             logger.info("{0} called", CODE);
 
-            logger.info("Bidder Request with Site name {0}", payload.bidRequest().getSite().getName());
-            logger.info("Bidder Request with Site cat {0}", payload.bidRequest().getSite().getCat());
+            logger.info("Bidder Request with Site {0}", payload.bidRequest().getSite());
 
             return Future.succeededFuture();
     }
