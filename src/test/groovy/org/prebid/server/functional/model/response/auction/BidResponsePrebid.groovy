@@ -9,6 +9,5 @@ import groovy.transform.ToString
 class BidResponsePrebid {
 
     Long auctionTimeStamp
-
     Map passThrough
 }
